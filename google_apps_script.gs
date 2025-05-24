@@ -442,19 +442,23 @@ function markExit(e) {
       throw new Error("No se proporcionó el timestamp del registro");
     }
 
-    // Validar campos adicionales
-    const bolsos = parseInt(e.parameter.bolsos);
-    const sector = e.parameter.sector;
-    const ssl = parseInt(e.parameter.ssl);
+    const isAbsent = e.parameter.isAbsent === 'true';
+    
+    // Si no es ausente, validar campos adicionales
+    if (!isAbsent) {
+      const bolsos = parseInt(e.parameter.bolsos);
+      const sector = e.parameter.sector;
+      const ssl = parseInt(e.parameter.ssl);
 
-    if (isNaN(bolsos) || bolsos < 0 || bolsos > 6) {
-      throw new Error("Valor de Bolsos inválido");
-    }
-    if (!sector) {
-      throw new Error("Sector no especificado");
-    }
-    if (isNaN(ssl) || ssl < 0 || ssl > 3) {
-      throw new Error("Valor de SSL inválido");
+      if (isNaN(bolsos) || bolsos < 0 || bolsos > 6) {
+        throw new Error("Valor de Bolsos inválido");
+      }
+      if (!sector) {
+        throw new Error("Sector no especificado");
+      }
+      if (isNaN(ssl) || ssl < 0 || ssl > 3) {
+        throw new Error("Valor de SSL inválido");
+      }
     }
 
     const searchTimestamp = e.parameter.timestamp;
@@ -478,10 +482,13 @@ function markExit(e) {
     const bolsosIndex = headers.findIndex(header => header === "Bolsos");
     const sectorIndex = headers.findIndex(header => header === "Sector");
     const sslIndex = headers.findIndex(header => header === "SSL");
+    const ausenteIndex = headers.findIndex(header => header === "Ausente");
 
-    if (timestampIndex === -1 || exitIndex === -1 || checkboxIndex === -1 || 
-        bolsosIndex === -1 || sectorIndex === -1 || sslIndex === -1) {
-      throw new Error("No se encontraron todas las columnas necesarias");
+    // Si no existe la columna Ausente, crearla
+    if (ausenteIndex === -1) {
+      const newColumnIndex = headers.length + 1;
+      sheet.getRange(1, newColumnIndex).setValue("Ausente");
+      headers.push("Ausente");
     }
 
     // Función para formatear fecha a string comparable
@@ -506,19 +513,32 @@ function markExit(e) {
       throw new Error("No se encontró el registro especificado");
     }
 
-    // Marcar la salida y actualizar campos adicionales
+    // Marcar la salida y actualizar campos
     const now = new Date();
     const rowNumber = rowIndex + 1;
+
+    // Actualizar hora de salida y marcar salida
     sheet.getRange(rowNumber, exitIndex + 1).setValue(now);
     sheet.getRange(rowNumber, checkboxIndex + 1).setValue(true);
-    sheet.getRange(rowNumber, bolsosIndex + 1).setValue(bolsos);
-    sheet.getRange(rowNumber, sectorIndex + 1).setValue(sector);
-    sheet.getRange(rowNumber, sslIndex + 1).setValue(ssl);
+
+    if (isAbsent) {
+      // Si es ausente, marcar la columna ausente y dejar los otros campos vacíos
+      sheet.getRange(rowNumber, ausenteIndex + 1).setValue(true);
+      if (bolsosIndex !== -1) sheet.getRange(rowNumber, bolsosIndex + 1).setValue('');
+      if (sectorIndex !== -1) sheet.getRange(rowNumber, sectorIndex + 1).setValue('');
+      if (sslIndex !== -1) sheet.getRange(rowNumber, sslIndex + 1).setValue('');
+    } else {
+      // Si no es ausente, actualizar los campos normalmente
+      sheet.getRange(rowNumber, bolsosIndex + 1).setValue(parseInt(e.parameter.bolsos));
+      sheet.getRange(rowNumber, sectorIndex + 1).setValue(e.parameter.sector);
+      sheet.getRange(rowNumber, sslIndex + 1).setValue(parseInt(e.parameter.ssl));
+      if (ausenteIndex !== -1) sheet.getRange(rowNumber, ausenteIndex + 1).setValue(false);
+    }
 
     return ContentService
           .createTextOutput(JSON.stringify({ 
             status: "success", 
-            message: "Salida registrada correctamente",
+            message: isAbsent ? "Ausencia registrada correctamente" : "Salida registrada correctamente",
             exitTime: now.toLocaleString()
           }))
           .setMimeType(ContentService.MimeType.JSON);

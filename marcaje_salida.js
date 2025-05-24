@@ -363,10 +363,37 @@ function filterAndDisplayData() {
     }).join('');
 }
 
-// Placeholder para la función de marcar ausente
-window.markAsAbsent = function(timestamp, button) {
-    // Esta función será implementada en el siguiente prompt
-    console.log('Marcar como ausente:', timestamp);
+// Función para marcar como ausente
+window.markAsAbsent = async function(timestamp, button) {
+    try {
+        button.disabled = true;
+        button.textContent = 'Procesando...';
+
+        const formData = new URLSearchParams();
+        formData.append('action', 'markExit');
+        formData.append('timestamp', timestamp);
+        formData.append('bolsos', '');  // Valor vacío para bolsos
+        formData.append('sector', '');  // Valor vacío para sector
+        formData.append('ssl', '');     // Valor vacío para SSL
+        formData.append('isAbsent', 'true'); // Indicador de ausencia
+
+        const result = await makeRequest(googleAppScriptUrl, 'POST', formData);
+
+        if (result.status === 'success') {
+            // Esperar un momento antes de actualizar
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            button.closest('tr').remove();
+            // Actualizar datos
+            fetchAttendanceData();
+        } else {
+            throw new Error(result.message || 'Error desconocido');
+        }
+    } catch (error) {
+        console.error('Error al marcar ausencia:', error);
+        button.textContent = 'Error';
+        button.disabled = false;
+        alert('Error al marcar ausencia: ' + error.message);
+    }
 }
 
 // Event listeners cuando el DOM está listo
