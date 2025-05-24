@@ -61,11 +61,37 @@ window.verifyPassword = function() {
     const passwordModal = document.getElementById('passwordModal');
     const mainContent = document.getElementById('mainContent');
 
+    // Verificar si hay una autenticación válida en localStorage
+    const authData = localStorage.getItem('exitAuthData');
+    if (authData) {
+        const { timestamp, isAuthenticated } = JSON.parse(authData);
+        const now = new Date().getTime();
+        const twelveHoursInMs = 12 * 60 * 60 * 1000;
+        
+        // Si la autenticación es válida y no han pasado 12 horas
+        if (isAuthenticated && (now - timestamp) < twelveHoursInMs) {
+            passwordModal.style.display = 'none';
+            mainContent.style.display = 'block';
+            loadSectors();
+            fetchAttendanceData();
+            return;
+        } else {
+            // Si han pasado más de 12 horas, limpiar el localStorage
+            localStorage.removeItem('exitAuthData');
+        }
+    }
+
     const password = passwordInput.value;
     if (password === 'slr2025#') {
+        // Guardar la autenticación en localStorage
+        const authData = {
+            timestamp: new Date().getTime(),
+            isAuthenticated: true
+        };
+        localStorage.setItem('exitAuthData', JSON.stringify(authData));
+        
         passwordModal.style.display = 'none';
         mainContent.style.display = 'block';
-        // Iniciar la carga de datos después de verificar la contraseña
         loadSectors();
         fetchAttendanceData();
     } else {
@@ -329,6 +355,23 @@ function filterAndDisplayData() {
 
 // Event listeners cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', () => {
+    // Verificar autenticación al cargar la página
+    const authData = localStorage.getItem('exitAuthData');
+    if (authData) {
+        const { timestamp, isAuthenticated } = JSON.parse(authData);
+        const now = new Date().getTime();
+        const twelveHoursInMs = 12 * 60 * 60 * 1000;
+        
+        if (isAuthenticated && (now - timestamp) < twelveHoursInMs) {
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            loadSectors();
+            fetchAttendanceData();
+        } else {
+            localStorage.removeItem('exitAuthData');
+        }
+    }
+
     // Referencias a elementos del DOM
     const passwordInput = document.getElementById('password');
     const driverFilter = document.getElementById('driverFilter');
@@ -350,9 +393,11 @@ document.addEventListener('DOMContentLoaded', () => {
     sectorSelect.addEventListener('change', updateSelectedSectorsDisplay);
     sectorSelect.addEventListener('blur', updateSelectedSectorsDisplay);
 
-    // Cargar sectores y datos iniciales
-    loadSectors();
-    fetchAttendanceData();
+    // Cargar sectores y datos iniciales si no está autenticado
+    if (!localStorage.getItem('exitAuthData')) {
+        loadSectors();
+        fetchAttendanceData();
+    }
 
     // Actualizar datos cada minuto
     setInterval(fetchAttendanceData, 60000);
