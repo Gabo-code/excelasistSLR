@@ -323,7 +323,7 @@ function filterAndDisplayData() {
     });
 
     if (!filteredData.length) {
-        exitList.innerHTML = '<tr><td colspan="3">No hay conductores pendientes por marcar salida</td></tr>';
+        exitList.innerHTML = '<tr><td colspan="2">No hay conductores pendientes por marcar salida</td></tr>';
         return;
     }
 
@@ -336,10 +336,12 @@ function filterAndDisplayData() {
             hour12: false
         });
         
+        // Emoji según el tipo de vehículo
+        const vehicleEmoji = record.vehicleType === 'Moto' ? '🏍️' : '🚗';
+        
         return `
         <tr>
-            <td>${record.driver}</td>
-            <td>${record.vehicleType}</td>
+            <td>${vehicleEmoji} ${record.driver}</td>
             <td>
                 <button 
                     class="mark-exit-button"
