@@ -365,10 +365,52 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.disabled = true;
         submitButton.textContent = 'Procesando...';
 
+        // Validar que los parámetros de ubicación estén disponibles
+        if (!TARGET_LAT || !TARGET_LON || !MAX_DISTANCE_METERS) {
+            messageElement.textContent = 'Error: Parámetros de ubicación no disponibles. Por favor, recarga la página.';
+            messageElement.className = 'error';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Registrar Asistencia';
+            return;
+        }
+
+        // Validar que se haya tomado la foto
         if (!photoTaken) {
             messageElement.textContent = 'Por favor, toma una foto antes de registrar la asistencia';
             messageElement.className = 'error';
             // Reactivar el botón si hay error
+            submitButton.disabled = false;
+            submitButton.textContent = 'Registrar Asistencia';
+            return;
+        }
+
+        // Validar la ubicación del usuario
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                });
+            });
+
+            const distance = calculateDistance(
+                position.coords.latitude,
+                position.coords.longitude,
+                TARGET_LAT,
+                TARGET_LON
+            );
+
+            if (distance > MAX_DISTANCE_METERS) {
+                messageElement.textContent = `Estás fuera del radio permitido (${Math.round(distance)} metros del punto de registro)`;
+                messageElement.className = 'error';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Registrar Asistencia';
+                return;
+            }
+        } catch (error) {
+            messageElement.textContent = 'Error al obtener tu ubicación. Por favor, permite el acceso a la ubicación y asegúrate de tener GPS activado.';
+            messageElement.className = 'error';
             submitButton.disabled = false;
             submitButton.textContent = 'Registrar Asistencia';
             return;
