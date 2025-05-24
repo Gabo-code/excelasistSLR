@@ -202,7 +202,7 @@ window.closeExitModal = function() {
     exitModal.style.display = 'none';
     if (currentExitData && currentExitData.button) {
         currentExitData.button.disabled = false;
-        currentExitData.button.textContent = 'Marcar Salida';
+        currentExitData.button.textContent = 'Salida';
     }
     currentExitData = null;
 }
@@ -323,7 +323,7 @@ function filterAndDisplayData() {
     });
 
     if (!filteredData.length) {
-        exitList.innerHTML = '<tr><td colspan="2">No hay conductores pendientes por marcar salida</td></tr>';
+        exitList.innerHTML = '<tr><td colspan="3">No hay conductores pendientes por marcar salida</td></tr>';
         return;
     }
 
@@ -344,15 +344,29 @@ function filterAndDisplayData() {
             <td>${vehicleEmoji} ${record.driver}</td>
             <td>
                 <button 
+                    class="absent-button"
+                    onclick="markAsAbsent('${timeString}', this)"
+                >
+                    Ausente
+                </button>
+            </td>
+            <td>
+                <button 
                     class="mark-exit-button"
                     onclick="showExitModal('${timeString}', this)"
                 >
-                    Marcar Salida
+                    Salida
                 </button>
             </td>
         </tr>
         `;
     }).join('');
+}
+
+// Placeholder para la función de marcar ausente
+window.markAsAbsent = function(timestamp, button) {
+    // Esta función será implementada en el siguiente prompt
+    console.log('Marcar como ausente:', timestamp);
 }
 
 // Event listeners cuando el DOM está listo
